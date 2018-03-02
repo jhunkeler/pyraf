@@ -6,21 +6,15 @@ import traceback
 
 import pytest
 
-from .utils import diff_outputs
+from .utils import diff_outputs, HAS_IRAF
 
-try:
+if HAS_IRAF:
     from pyraf import iraf
-    iraf.imhead("dev$pix")
 
     # Turn off the test probe output since it comes with
     # path info that is ever changing
     import pyraf
     pyraf.irafexecute.test_probe = False
-
-except:  # Only this can catch the error!
-    HAS_IRAF = False
-else:
-    HAS_IRAF = True
 
 
 @pytest.mark.skipif(not HAS_IRAF, reason='Need IRAF to run')

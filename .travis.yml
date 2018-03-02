@@ -33,9 +33,9 @@ env:
 
 matrix:
     include:
-        # Run tests
-        - python: 2.7
-          env: MAIN_CMD='pytest lib/pyraf/tests' SETUP_CMD=''
+        # DISABLED: Real tests are run on Jenkins
+        #- python: 2.7
+        #  env: MAIN_CMD='pytest lib/pyraf/tests' SETUP_CMD=''
 
         # DISABLED FOR NOW
         # Try Astropy development version

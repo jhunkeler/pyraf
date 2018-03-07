@@ -75,7 +75,7 @@ for (python_ver in matrix_python) {
 
     // 2.7 doesn't work with Astropy-dev, so skip it.
     if (python_ver == "2.7") {
-        PIP_DEPS += ["astropy<3.0 --force --upgrade --no-deps"]
+        PIP_DEPS += ["'astropy<3.0' --force --upgrade --no-deps"]
     }
     else {
         PIP_DEPS += ["Cython",

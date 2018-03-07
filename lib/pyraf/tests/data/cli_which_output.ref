@@ -1,5 +1,5 @@
 --> which pw
-"Task `pw' is ambiguous, could be user.pwd, ctools.pweight"
+user
 --> which lang
 clpackage
 --> which stdg

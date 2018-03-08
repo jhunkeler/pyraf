@@ -1,0 +1,10 @@
+lParam should show 1 par (mode)
+        (mode = "al")           
+lParam should show 6 actual pars (our 5 + mode)
+       caller = "Ima Hungry"    person calling Bobs
+     diameter = 12              pizza size
+           pi = 3.14159         Bob makes circles!
+     delivery = yes             delivery? (or pickup)
+      topping = "peps"          the choices
+        (mode = "al")           
+Test successful

@@ -150,3 +150,34 @@ def test_pset_msstatis_191():
     assertApproxEqual(iraf.egstp.min, 1116.0)
     assertApproxEqual(iraf.egstp.max, 14022.0)
     assertApproxEqual(iraf.egstp.sum, 321415936.0)
+
+
+def test_pset_msstat_save_data():
+    """Expect a task can save data into a PSET
+    """
+    # run msstat, which sets egstp values
+    # check PSET egstp's values
+    iraf.msstatis('dev$pix')
+    iraf.egstp.lParam()
+    assert iraf.egstp.npix == 262144, str(iraf.egstp.npix)
+    assert iraf.egstp.min == -1.0, str(iraf.egstp.min)
+    assert iraf.egstp.max == 19936.0, str(iraf.egstp.max)
+    assert iraf.egstp.sum == 28394234.0, str(iraf.egstp.sum)
+
+    # reset PSET egstp's values
+    _unlearn_egstp(iraf.egstp)
+    iraf.egstp.lParam()
+    assert iraf.egstp.npix == 0, str(iraf.egstp.npix)
+    assert iraf.egstp.min == 0.0, str(iraf.egstp.min)
+    assert iraf.egstp.max == 0.0, str(iraf.egstp.max)
+    assert iraf.egstp.sum == 0.0, str(iraf.egstp.sum)
+
+    # run msstat again
+    iraf.msstatis('dev$pix')
+
+    # recheck PSET egstp's values
+    iraf.egstp.lParam()
+    assert iraf.egstp.npix == 262144, str(iraf.egstp.npix)
+    assert iraf.egstp.min == -1.0, str(iraf.egstp.min)
+    assert iraf.egstp.max == 19936.0, str(iraf.egstp.max)
+    assert iraf.egstp.sum == 28394234.0, str(iraf.egstp.sum)

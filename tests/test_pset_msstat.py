@@ -26,7 +26,8 @@ def _iraf_init():
     if not HAS_IRAF:
         return
 
-    subprocess.check_call('mkiraf -f xterm'.split())
+    if not os.path.exists('login.cl'):
+        subprocess.check_call('mkiraf -f xterm'.split())
 
     # imports & package loading
     iraf.stsdas(_doprint=0)

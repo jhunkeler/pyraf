@@ -1,3 +1,4 @@
+"""These were tests under core/graphics_checks in pandokia."""
 import os
 import sys
 

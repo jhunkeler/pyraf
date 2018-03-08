@@ -7,8 +7,6 @@ IS_PY2 = sys.version_info < (3, 0)
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 
 try:
-    os.environ['PYRAF_NO_IRAF'] = 1
-    os.environ['PYRAF_NO_DISPLAY'] = 1
     from pyraf import iraf
     iraf.imhead("dev$pix")
 except:  # Only this can catch the error!

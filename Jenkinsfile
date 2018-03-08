@@ -25,7 +25,7 @@ test27.build_cmds = ["conda config --add channels http://ssb.stsci.edu/astrocond
                      "${PY_SETUP} build",
                      "${PY_SETUP} build_ext --inplace"]
 test27.test_cmds = ["with_env mkiraf -f xterm",
-                    "with_env pytest ${PYTEST_ARGS} lib/pyraf/tests"]
+                    "with_env pytest ${PYTEST_ARGS}"]
 test27.failedUnstableThresh = 1
 test27.failedFailureThresh = 6
 matrix += test27

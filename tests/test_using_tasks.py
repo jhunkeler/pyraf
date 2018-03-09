@@ -40,17 +40,18 @@ def _assertApproxEqual(afloat, bfloat, tolerance=1.0e-12):
         assert diff < tolerance, \
             '{} != {}, diff = {}'.format(afloat, bfloat, math.fabs.diff)
 
+
 def _check_all_dqbits(the_dqbits_obj, valtup):
     """ Convenience method to check the 16 bitN values of dqbits """
     # converts to iraf yes and no's
-    yes_no_map = { True: "iraf.yes", False: "iraf.no" }
+    yes_no_map = {True: "iraf.yes", False: "iraf.no"}
 
     # check each one
     for i in range(16):
         expect_is_true = 'the_dqbits_obj.bit{} == {}'.format(i+1, yes_no_map[bool(valtup[i])])
         result = eval(expect_is_true)
         msg = "Expected this to be True: {}".format(expect_is_true)
-        msg = msg.replace('the_dqbits_obj','dqbits')
+        msg = msg.replace('the_dqbits_obj', 'dqbits')
         assert result, msg
 
 
@@ -58,13 +59,13 @@ def _check_all_dqbits(the_dqbits_obj, valtup):
 @pytest.fixture
 def _data(tmpdir):
     inputs = dict(
-        pset = dict(
-            input1 = os.path.join(DATA_DIR, 'pset_msstat_input.fits')
+        pset=dict(
+            input1=os.path.join(DATA_DIR, 'pset_msstat_input.fits')
         ),
-        dqbits = dict(
-            input1 = str(tmpdir.join('dqbits_im1.fits')),
-            input2 = str(tmpdir.join('dqbits_im2.fits')),
-            output = str(tmpdir.join('dqbits_out.fits'))
+        dqbits=dict(
+            input1=str(tmpdir.join('dqbits_im1.fits')),
+            input2=str(tmpdir.join('dqbits_im2.fits')),
+            output=str(tmpdir.join('dqbits_out.fits'))
         )
     )
     return inputs
@@ -124,17 +125,17 @@ def test_task_min_match(_iraf_pset_init, _data):
     iraf.msstat(_data['pset']['input1'], arrays='science', clarray='science',
                 StdoutAppend=stdout, StderrAppend=stderr)
     iraf.msstati(_data['pset']['input1'], arrays='science', clarray='science',
-                StdoutAppend=stdout, StderrAppend=stderr)
+                 StdoutAppend=stdout, StderrAppend=stderr)
     iraf.msstatis(_data['pset']['input1'], arrays='science', clarray='science',
-                StdoutAppend=stdout, StderrAppend=stderr)
+                  StdoutAppend=stdout, StderrAppend=stderr)
     iraf.msstatist(_data['pset']['input1'], arrays='science', clarray='science',
-                StdoutAppend=stdout, StderrAppend=stderr)
+                   StdoutAppend=stdout, StderrAppend=stderr)
     iraf.msstatisti(_data['pset']['input1'], arrays='science', clarray='science',
-                StdoutAppend=stdout, StderrAppend=stderr)
+                    StdoutAppend=stdout, StderrAppend=stderr)
     iraf.msstatistic(_data['pset']['input1'], arrays='science', clarray='science',
-                StdoutAppend=stdout, StderrAppend=stderr)
+                     StdoutAppend=stdout, StderrAppend=stderr)
     iraf.msstatistics(_data['pset']['input1'], arrays='science', clarray='science',
-                StdoutAppend=stdout, StderrAppend=stderr)
+                      StdoutAppend=stdout, StderrAppend=stderr)
 
     assert "ERROR" not in stdout.getvalue()
     assert not stderr.getvalue()
@@ -144,15 +145,15 @@ def test_task_min_match(_iraf_pset_init, _data):
 def test_task_ambiguous_name_raises_exception(_iraf_pset_init, _data):
     with pytest.raises(AttributeError):
         iraf.m(_data['pset']['input1'], arrays='science', clarray='science',
-            StdoutAppend=stdout, StderrAppend=stderr)
+               StdoutAppend=stdout, StderrAppend=stderr)
 
     with pytest.raises(AttributeError):
         iraf.ms(_data['pset']['input1'], arrays='science', clarray='science',
-            StdoutAppend=stdout, StderrAppend=stderr)
+                StdoutAppend=stdout, StderrAppend=stderr)
 
     with pytest.raises(AttributeError):
         iraf.mss(_data['pset']['input1'], arrays='science', clarray='science',
-            StdoutAppend=stdout, StderrAppend=stderr)
+                 StdoutAppend=stdout, StderrAppend=stderr)
 
 
 @pytest.mark.skipif(not HAS_IRAF, reason='Need IRAF to run')
@@ -266,12 +267,12 @@ def test_dqbits_mscombine(_iraf_dqbits_init, _data, tmpdir):
     """
     # reset PSET dqbits' values
     iraf.dqbits.unlearn()
-    _check_all_dqbits(iraf.dqbits, (0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0) )
+    _check_all_dqbits(iraf.dqbits, (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
     iraf.dqbits.lParam()
 
     # now set PSET dqbits' values to a non-default set
     iraf.dqbits.bit2 = iraf.dqbits.bit4 = iraf.dqbits.bit6 = iraf.dqbits.bit8 = iraf.yes
-    _check_all_dqbits(iraf.dqbits, (0,1,0,1,0,1,0,1,0,0,0,0,0,0,0,0) )
+    _check_all_dqbits(iraf.dqbits, (0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0))
     iraf.dqbits.lParam()
 
     # run mscombine to see what is does with the dqbit pars (shouldn't alter)
@@ -281,4 +282,4 @@ def test_dqbits_mscombine(_iraf_dqbits_init, _data, tmpdir):
 
     # now, check the PSET - should be unaltered (fixed by #207)
     iraf.dqbits.lParam()
-    _check_all_dqbits(iraf.dqbits, (0,1,0,1,0,1,0,1,0,0,0,0,0,0,0,0) )
+    _check_all_dqbits(iraf.dqbits, (0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0))

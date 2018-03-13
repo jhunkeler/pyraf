@@ -18,12 +18,11 @@ matrix = []
 test27 = new BuildConfig()
 test27.nodetype = "linux-stable"
 test27.build_mode = "test-suite"
-test27.env_vars = []
+test27.env_vars = ['PYRAF_NO_DISPLAY=1']
 test27.build_cmds = ["conda config --add channels http://ssb.stsci.edu/astroconda",
                      "${CONDA_INST} python=2.7 iraf-all six",
                      "${CONDA_INST} --only-deps pyraf",
-                     "${PY_SETUP} build",
-                     "${PY_SETUP} build_ext --inplace"]
+                     "${PY_SETUP} develop"]
 test27.test_cmds = ["with_env mkiraf -f xterm",
                     "with_env pytest ${PYTEST_ARGS}"]
 test27.failedUnstableThresh = 1

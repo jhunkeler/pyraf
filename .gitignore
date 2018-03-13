@@ -43,6 +43,7 @@ distribute-*.tar.gz
 .tox
 .*.sw[op]
 *~
+cmd*.cl
 .pytest_cache/
 clcache.v2
 uparm

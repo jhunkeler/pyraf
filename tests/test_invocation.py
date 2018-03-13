@@ -26,6 +26,11 @@ ipython_cases = (
     ('s = "hello world";s', 'Out[1]: \'hello world\''),
 )
 
+python_cases = (
+    ('print("ipython test")', 'ipython test'),
+    ('s = "hello world";s', '\'hello world\''),
+)
+
 
 class PyrafEx:
     def __init__(self):
@@ -92,6 +97,21 @@ def test_invoke_command_direct(_with_pyraf, test_input, expected):
     result = _with_pyraf.run(['-s'], stdin=test_input+'\n.exit')
     assert result.stdout.strip().endswith(expected)
     #assert not result.stderr  # BUG: Why is there a single newline on stderr?
+    assert not result.code, result.stderr
+
+
+@pytest.mark.skipif(not HAS_PYRAF_EXEC, reason='PyRAF must be installed to run')
+@pytest.mark.skipif(not HAS_IRAF, reason='PyRAF must be installed to run')
+@pytest.mark.parametrize('test_input,expected', python_cases)
+def test_invoke_command_no_wrapper_direct(_with_pyraf, test_input, expected):
+    """Issue basic commands on pyraf's passthrough shell
+    """
+    result = _with_pyraf.run(['-i'], stdin=test_input)
+    _output = result.stdout.strip()
+    begin = _output.find('>>>')
+    output = ''.join([x.replace('>>>', '').strip() for x in _output[begin:].splitlines()])
+
+    assert output == expected
     assert not result.code, result.stderr
 
 

@@ -14,7 +14,7 @@ if HAS_IRAF:
 try:
     from cStringIO import StringIO
 except ImportError:
-    from io.StringIO import StringIO
+    from io import StringIO
 
 
 # --- Helpers ---

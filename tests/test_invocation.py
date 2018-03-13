@@ -9,6 +9,24 @@ import sys
 from distutils.spawn import find_executable
 
 
+cl_cases = (
+    (('print(1)'), '1'),
+    (('print(1)'), '1'),
+    (('print(1 + 2)'), '3'),
+    (('print(6 - 1)'), '5'),
+    (('print(14 / 2)'), '7'),
+    (('print(3 * 3)'), '9'),
+    (('imhead("dev$pix")'), 'dev$pix[512,512][short]: m51  B  600s'),
+    (('unlearn imcoords'), ''),
+    (('bye'), ''),
+)
+
+ipython_cases = (
+    ('print("ipython test")', 'In [1]: ipython test'),
+    ('s = "hello world";s', 'Out[1]: \'hello world\''),
+)
+
+
 class PyrafEx:
     def __init__(self):
         self.code = 0
@@ -23,7 +41,7 @@ class PyrafEx:
 
         cmd = ['pyraf', '-x', '-s']
         cmd += args
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.PIPE)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
         self.stdout, self.stderr = proc.communicate(stdin)
 
         if sys.hexversion >= 0x0300000F0:
@@ -55,32 +73,35 @@ def test_invoke_version(_with_pyraf, test_input):
 
 @pytest.mark.skipif(not HAS_PYRAF_EXEC, reason='PyRAF must be installed to run')
 @pytest.mark.skipif(not HAS_IRAF, reason='PyRAF must be installed to run')
-@pytest.mark.parametrize('test_input,expected', [
-    (('-c', 'print(1)'), '1'),
-    (('-c', 'print(1)'), '1'),
-    (('-c', 'print(1 + 2)'), '3'),
-    (('-c', 'print(6 - 1)'), '5'),
-    (('-c', 'print(12 / 1.7)'), '7'),
-    (('-c', 'print(3 * 3)'), '9'),
-    (('-c', 'imhead("dev$pix")'), 'dev$pix[512,512][short]: m51  B  600s'),
-    (('-c', 'unlearn imcoords'), ''),
-    (('-c', 'bye'), ''),
-])
+@pytest.mark.parametrize('test_input,expected', cl_cases)
 def test_invoke_command(_with_pyraf, test_input, expected):
     """Issue basic commands to CL parser
     """
-    result = _with_pyraf.run(test_input)
-    assert not result.code
+    result = _with_pyraf.run(['-c', test_input])
     assert result.stdout.startswith(expected)
+    assert not result.stderr
+    assert not result.code, result.stderr
 
 
 @pytest.mark.skipif(not HAS_PYRAF_EXEC, reason='PyRAF must be installed to run')
 @pytest.mark.skipif(not HAS_IRAF, reason='PyRAF must be installed to run')
-def test_invoke_ipython(_with_pyraf):
-    """Can we interact with the ipython shell wrapper?
+@pytest.mark.parametrize('test_input,expected', cl_cases)
+def test_invoke_command_direct(_with_pyraf, test_input, expected):
+    """Issue basic commands on pyraf's native shell
     """
-    result = _with_pyraf.run('-y', stdin='print("ipython test")')
-    assert 'In [1]: ipython test' in result.stdout
+    result = _with_pyraf.run(['-s'], stdin=test_input+'\n.exit')
+    assert result.stdout.strip().endswith(expected)
+    #assert not result.stderr  # BUG: Why is there a single newline on stderr?
     assert not result.code, result.stderr
 
 
+@pytest.mark.skipif(not HAS_PYRAF_EXEC, reason='PyRAF must be installed to run')
+@pytest.mark.skipif(not HAS_IRAF, reason='PyRAF must be installed to run')
+@pytest.mark.parametrize('test_input,expected', ipython_cases)
+def test_invoke_command_ipython(_with_pyraf, test_input, expected):
+    """Issue basic commands on pyraf's ipython shell wrapper
+    """
+    result = _with_pyraf.run('-y', stdin=test_input)
+    assert expected in result.stdout
+    assert not result.stderr
+    assert not result.code, result.stderr

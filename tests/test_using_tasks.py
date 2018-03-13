@@ -229,7 +229,7 @@ def test_pset_msstatistics_191(_iraf_pset_init, _data):
 
 
 @pytest.mark.skipif(not HAS_IRAF, reason='Need IRAF to run')
-def test_pset_msstat_save_data(_iraf_pset_init, _data):
+def test_pset_msstatistics_save_data(_iraf_pset_init, _data):
     """Expect a task can save data into a PSET
     """
     # run msstat, which sets egstp values

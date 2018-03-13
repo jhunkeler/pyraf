@@ -22,7 +22,7 @@ test27.env_vars = ['PYRAF_NO_DISPLAY=1']
 test27.build_cmds = ["conda config --add channels http://ssb.stsci.edu/astroconda",
                      "${CONDA_INST} python=2.7 iraf-all six",
                      "${CONDA_INST} --only-deps pyraf",
-                     "${PY_SETUP} develop"]
+                     "${PY_SETUP} install"]
 test27.test_cmds = ["with_env mkiraf -f xterm",
                     "with_env pytest ${PYTEST_ARGS}"]
 test27.failedUnstableThresh = 1

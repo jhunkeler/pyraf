@@ -80,7 +80,7 @@ def test_invoke_ipython(_with_pyraf):
     """Can we interact with the ipython shell wrapper?
     """
     result = _with_pyraf.run('-y', stdin='print("ipython test")')
-    assert not result.code
     assert 'In [1]: ipython test' in result.stdout
+    assert not result.code, result.stderr
 
 

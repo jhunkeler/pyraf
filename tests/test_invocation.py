@@ -32,7 +32,7 @@ python_cases = (
 )
 
 
-class PyrafEx:
+class PyrafEx(object):
     def __init__(self):
         self.code = 0
         self.stdout = None

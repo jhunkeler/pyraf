@@ -94,9 +94,6 @@ def _iraf_dqbits_init(_data):
     if not HAS_IRAF:
         return
 
-    if not os.path.exists('login.cl'):
-        subprocess.check_call('mkiraf -f xterm'.split())
-
     # imports & package loading
     iraf.stsdas(_doprint=0)
     iraf.imgtools(_doprint=0)
@@ -231,6 +228,7 @@ def test_pset_msstatistics_191(_iraf_pset_init, _data):
     _assertApproxEqual(iraf.egstp.sum, 321415936.0)
 
 
+@pytest.mark.skipif(not HAS_IRAF, reason='Need IRAF to run')
 def test_pset_msstat_save_data(_iraf_pset_init, _data):
     """Expect a task can save data into a PSET
     """
@@ -262,6 +260,7 @@ def test_pset_msstat_save_data(_iraf_pset_init, _data):
     assert iraf.egstp.sum == 28394234.0, str(iraf.egstp.sum)
 
 
+@pytest.mark.skipif(not HAS_IRAF, reason='Need IRAF to run')
 def test_dqbits_mscombine(_iraf_dqbits_init, _data, tmpdir):
     """Expect dqbits unaltered after combining data
     """

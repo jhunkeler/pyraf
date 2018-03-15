@@ -8,6 +8,8 @@ import six
 from .utils import IS_PY2, HAS_IRAF
 
 if HAS_IRAF:
+    from pyraf import iraf
+    from pyraf import gki
     from pyraf import wutil
 
 REF = {}
@@ -58,3 +60,43 @@ def test_dumpspecs():
     expected = REF[key]
     assert expected.strip() == out_str.strip(), \
         'Unexpected output from wutil.dumpspecs: {}'.format(out_str)
+
+
+@pytest.mark.skipif(not HAS_IRAF, reason='Need IRAF to run')
+def test_gkidecode(tmpdir):
+    iraf.plot(_doprint=0)
+    prow_stdout = str(tmpdir.join('test_prow_256.gki'))
+    gki_stdout = str(tmpdir.join('gkidecode_stdout.txt'))
+    gki_stderr = str(tmpdir.join('gkidecode_stderr.txt'))
+
+    iraf.prow("dev$pix", row=256, StdoutG=prow_stdout)
+    iraf.gkidecode(prow_stdout, Stdout=gki_stdout, Stderr=gki_stderr)
+    assert 'close_workstation' in open(gki_stdout).readlines()[-1]
+    assert not open(gki_stderr).readlines()
+
+
+@pytest.mark.parametrize('test_input', [
+    'psdump',
+    'psi_land',
+])
+def test_gki_postscript_in_graphcap(test_input):
+   """ Verify that the graphcap file supports psdump and psi_land """
+   gc = gki.getGraphcap()
+   assert gc, "default graphcap not found"
+   assert test_input in gc, \
+           "default graphcap does not support {}".format(test_input)
+   device = gc[test_input]
+   assert device.devname == test_input, \
+           "Invalid graphcap device for {}".format(test_input)
+
+
+def test_gki_opcodes():
+   """ Simple aliveness test for the opcode2name dict """
+   for opc in gki.GKI_ILLEGAL_LIST:
+      assert gki.opcode2name[opc] == 'gki_unknown'
+
+
+def test_gki_control_codes():
+   """ Simple aliveness test for the control2name dict """
+   for ctl in gki.GKI_ILLEGAL_LIST:
+      assert gki.control2name[ctl] == 'control_unknown'

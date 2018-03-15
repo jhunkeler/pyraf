@@ -2,7 +2,9 @@
 from __future__ import absolute_import, division
 
 import pytest
+import random
 import time
+import uuid
 
 from .utils import diff_outputs, HAS_IRAF
 
@@ -10,6 +12,7 @@ if HAS_IRAF:
     from pyraf.irafpar import IrafParList
     from pyraf.subproc import Subprocess, SubprocessError
     from stsci.tools import basicpar
+    from stsci.tools.basicpar import parFactory
 
 
 @pytest.fixture
@@ -17,17 +20,8 @@ def _proc():
     return Subprocess('cat', expire_noisily=0)
 
 
-#@pytest.mark.skipif(not HAS_IRAF, reason='Need IRAF to run')
-#def test_irafparlist(tmpdir):
-#    outfile = str(tmpdir.join('output.txt'))
-#
-#    with open(outfile, 'w') as f:
-#        irafpar.test_IrafParList(f)
-#
-#    diff_outputs(outfile, 'data/core_irafparlist_output.ref')
-
-
-@pytest.mark.xfail(reason="BUGGED")
+@pytest.mark.xfail(reason="Child does not raise SubproccesError: It only "
+                          "prints the error received from a raised exception.")
 def test_subproc_raise_on_bogus():
     """Raise on failure to execute process
     (It doesn't though...)
@@ -109,6 +103,18 @@ def _ipl(_ipl_defaults):
     return IrafParList(_ipl_defaults['name'], _ipl_defaults['filename'])
 
 
+@pytest.fixture
+def _pars():
+    values = (
+        (('caller', 's', 'a', 'Ima Hungry', '', None, 'person calling Bobs'), True),
+        (('diameter', 'i' , 'a', '12', '', None, 'pizza size'), True),
+        (('pi', 'r', 'a', '3.14159', '', None, 'Bob makes circles!'), True),
+        (('delivery', 'b', 'a', 'yes', '', None, 'delivery? (or pickup)'), True),
+        (('topping', 's', 'a', 'peps', '|toms|peps|olives', None, 'the choices'), True),
+    )
+    return [parFactory(*x) for x in values]
+
+
 @pytest.mark.xfail(reason="BUG: Returns file path instead of name")
 def test_irafparlist_getName(_ipl, _ipl_defaults):
     assert _ipl.getName() == _ipl_defaults['name']
@@ -128,109 +134,176 @@ def test_irafparlist_hasPar_defaults(_ipl, _ipl_defaults):
     assert len(_ipl) == 2
 
 
-def test_irafparlist_addParam_quick(_ipl):
-    par = basicpar.parFactory(
-          ('caller', 's', 'a', 'Ima Hungry', '', None, 'person calling Bobs'),
-          True)
+def test_irafparlist_addParam_verify(_ipl, _pars):
+    """Add a series of pars to _ipl while verifying
+    the data can be read back as it appears.
+    """
+    for idx, par in enumerate(_pars, start=1):
+        # Probably pointless.
+        assert par.dpar().strip() == "{} = {}".format(par.name, par.toString(par.value, quoted=1))
+        # Add the paramater (+2 takes each par's default values into account)
+        _ipl.addParam(par)
+        assert len(_ipl) == idx + 2
+
+        # Check that each par name exists in _ipl, plus defaults
+        defaults = ['$nargs', 'mode']
+        solution = sorted([x.name for x in _pars[:idx]] + defaults)
+        assert sorted(_ipl.getAllMatches('')) == solution
+
+
+def test_irafparlist_getAllMatches(_ipl, _pars):
+    for par in _pars:
+        _ipl.addParam(par)
+
+    # Check that each par name exists in _ipl
+    defaults = ['$nargs', 'mode']
+    solution = sorted([x.name for x in _pars] + defaults)
+    assert sorted(_ipl.getAllMatches('')) == solution
+
+
+def test_irafparlist_getAllMatches_known_needle(_ipl, _pars):
+    """Expect to receive a list of pars starting with needle
+    """
+    for par in _pars:
+        _ipl.addParam(par)
+
+    needle = 'd'
+    # Verify the pars returned by getAllMatches(needle) are correct
+    solution = sorted([str(x.name) for x in _pars if str(x.name).startswith(needle)])
+    assert sorted(_ipl.getAllMatches(needle)) == solution
+
+
+def test_irafparlist_getAllMatches_unknown_needle(_ipl, _pars):
+    """Expect to receive an empty list with no par match
+    """
+    for par in _pars:
+        _ipl.addParam(par)
+
+    needle = 'jojo'
+    assert sorted(_ipl.getAllMatches(needle)) == list()
+
+
+def test_irafparlist_getParDict(_ipl, _pars):
+    for par in _pars:
+        _ipl.addParam(par)
+
+    par_dict = _ipl.getParDict()
+
+    for par in _pars:
+        assert par.name in par_dict
+
+
+@pytest.mark.xfail(reason="BUG: raises 'TypeError: number coercion failed'")
+def test_irafparlist_getParList(_ipl, _pars):
+    for par in _pars:
+        _ipl.addParam(par)
+
+    par_list = _ipl.getParList()
+
+    for par in _pars:
+        assert par.name in par_list
+
+def test_irafparlist_hasPar(_ipl, _pars):
+    for par in _pars:
+        _ipl.addParam(par)
+
+    for par in _pars:
+        assert _ipl.hasPar(par.name)
+
+
+def test_irafparlist_setParam_string(_ipl, _pars):
+    """Change existing parameter then verify it
+    """
+    # Use the first string parameter we come across
+    for par in _pars:
+        if par.type == 's':
+            assert isinstance(par, basicpar.IrafParS)
+            break
+
     _ipl.addParam(par)
-    assert len(_ipl) == 3
-    assert _ipl.getAllMatches('') == ['caller', '$nargs', 'mode']
+    _ipl.setParam(par.name, 'different value')
+    assert 'different value' == _ipl.getParDict()[par.name].value
 
 
-def meh_IrafParList():
-    """ Test the IrafParList class """
-    # let's add some pars
-    par1 = basicpar.parFactory( \
-           ('caller','s','a','Ima Hungry','',None,'person calling Bobs'), True)
-    x = par1.dpar().strip()
-    assert x == "caller = 'Ima Hungry'", "par1 is off: "+str(x)
-    par2 = basicpar.parFactory( \
-           ('diameter','i','a','12','',None,'pizza size'), True)
-    x = par2.dpar().strip()
-    assert x == "diameter = 12", "par2 is off: "+str(x)
-    par3 = basicpar.parFactory( \
-           ('pi','r','a','3.14159','',None,'Bob makes circles!'), True)
-    x = par3.dpar().strip()
-    assert x == "pi = 3.14159", "par3 is off: "+str(x)
-    par4 = basicpar.parFactory( \
-           ('delivery','b','a','yes','',None,'delivery? (or pickup)'), True)
-    x = par4.dpar().strip()
-    assert x == "delivery = yes", "par4 is off: "+str(x)
-    par5 = basicpar.parFactory( \
-           ('topping','s','a','peps','|toms|peps|olives',None,'the choices'), True)
-    x = par5.dpar().strip()
-    assert x == "topping = 'peps'", "par5 is off: "+str(x)
+def test_irafparlist_setParam_integer(_ipl, _pars):
+    """Change existing parameter then verify it
+    """
+    # Use the first integer parameter we come across
+    for par in _pars:
+        if par.type == 'i':
+            assert isinstance(par, basicpar.IrafParI)
+            break
 
-    pl.addParam(par1)
-    assert len(pl) == 3, "Unexpected length: "+str(len(pl))
-    pl.addParam(par2)
-    pl.addParam(par3)
-    pl.addParam(par4)
-    pl.addParam(par5)
-    assert len(pl) == 7, "Unexpected length: "+str(len(pl))
+    _ipl.addParam(par)
 
-    # now we have a decent IrafParList to play with - test some
-    fout.write("lParam should show 6 actual pars (our 5 + mode)\n"+\
-               pl.lParamStr()+'\n')
-    assert pl.__doc__ == 'List of Iraf parameters',"__doc__ = "+str(pl.__doc__)
-    x = sorted(pl.getAllMatches(''))
-    assert x==['$nargs','caller','delivery','diameter','mode','pi','topping'],\
-           "Unexpected all: "+str(x)
-    x = sorted(pl.getAllMatches('d'))
-    assert x == ['delivery','diameter'], "Unexpected d's: "+str(x)
-    x = sorted(pl.getAllMatches('jojo'))
-    assert x == [], "Unexpected empty list: "+str(x)
-    x = pl.getParDict()
-    assert 'caller' in x, "Bad dict? "+str(x)
-    x = pl.getParList()
-    assert par1 in x, "Bad list? "+str(x)
-    assert pl.hasPar('topping'), "hasPar call failed"
-    # change a par val
-    pl.setParam('topping','olives') # should be no prob
-    assert 'olives' == pl.getParDict()['topping'].value, \
-           "Topping error: "+str(pl.getParDict()['topping'].value)
-    try:
-       # the following setParam should fail - not in choice list
-       pl.setParam('topping','peanutbutter') # oh the horror
-       raise RuntimeError("The bad setParam didn't fail?")
-    except ValueError:
-       pass
+    new_value = par.value + 1
+    _ipl.setParam(par.name, new_value)
+    assert new_value == _ipl.getParDict()[par.name].value
 
-    # Now try some direct access (also tests IrafPar basics)
-    assert pl.caller == "Ima Hungry", 'Ima? '+pl.getParDict()['caller'].value
-    pl.pi = 42
-    assert pl.pi == 42.0, "pl.pi not 42, ==> "+str(pl.pi)
-    try:
-       pl.pi = 'strings are not allowed' # should throw
-       raise RuntimeError("The bad pi assign didn't fail?")
-    except ValueError:
-       pass
-    pl.diameter = '9.7' # ok, string to float to int
-    assert pl.diameter == 9, "pl.diameter?, ==> "+str(pl.diameter)
-    try:
-       pl.diameter = 'twelve' # fails, not parseable to an int
-       raise RuntimeError("The bad diameter assign didn't fail?")
-    except ValueError:
-       pass
-    assert pl.diameter == 9, "pl.diameter after?, ==> "+str(pl.diameter)
-    pl.delivery = False # converts
-    assert pl.delivery == no, "pl.delivery not no? "+str(pl.delivery)
-    pl.delivery = 1 # converts
-    assert pl.delivery == yes, "pl.delivery not yes? "+str(pl.delivery)
-    pl.delivery = 'NO' # converts
-    assert pl.delivery == no, "pl.delivery not NO? "+str(pl.delivery)
-    try:
-       pl.delivery = "maybe, if he's not being recalcitrant"
-       raise RuntimeError("The bad delivery assign didn't fail?")
-    except ValueError:
-       pass
-    try:
-       pl.topping = 'peanutbutter' # try again
-       raise RuntimeError("The bad topping assign didn't fail?")
-    except ValueError:
-       pass
-    try:
-       x = pl.pumpkin_pie
-       raise RuntimeError("The pumpkin_pie access didn't fail?")
-    except KeyError:
-       pass
+
+@pytest.mark.xfail(reason="BUG: TypeError: cannot concatenate 'str' and 'float' objects")
+def test_irafparlist_setParam_float(_ipl, _pars):
+    """Change existing parameter then verify it
+    """
+    # Use the first integer parameter we come across
+    for par in _pars:
+        if par.type == 'f':
+            assert isinstance(par, basicpar.IrafParF)
+            break
+
+    _ipl.addParam(par)
+
+    new_value = par.value + 1.0
+    _ipl.setParam(par.name, new_value)
+    assert new_value == _ipl.getParDict()[par.name].value
+
+
+@pytest.mark.xfail(reason='Can overwrite string type with uncast integer')
+def test_irafparlist_incompatible_assignment_raises(_ipl, _pars):
+    """Assign incompatible values to existing pars
+    """
+    bsint = uuid.uuid1().hex[:8]
+    break_with = dict(
+        s=int(bsint, 16),
+        b=bsint,
+        i=bsint,
+        l=bsint,
+        f=bsint,
+        r=bsint,
+    )
+
+    for par in _pars:
+        _ipl.addParam(par)
+
+    for par in _pars:
+        with pytest.raises(ValueError):
+            print(par.name, par.type, break_with[par.type], type(break_with[par.type]))
+            setattr(_ipl, par.name, break_with[par.type])
+
+
+def test_irafparlist_boolean_convert_false(_ipl, _pars):
+    # Select first boolean par
+    for par in _pars:
+        if par.type == 'b':
+            break
+
+    _ipl.addParam(par)
+
+    test_inputs = (False, 0, 'NO')
+    for test_input in test_inputs:
+        setattr(_ipl, par.name, test_input)
+        assert getattr(_ipl, par.name) == False
+
+
+def test_irafparlist_boolean_convert_true(_ipl, _pars):
+    # Select first boolean par
+    for par in _pars:
+        if par.type == 'b':
+            break
+
+    _ipl.addParam(par)
+
+    test_inputs = (True, 1, 'YES')
+    for test_input in test_inputs:
+        setattr(_ipl, par.name, test_input)
+        assert getattr(_ipl, par.name) == True

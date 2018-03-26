@@ -98,4 +98,4 @@ for (python_ver in matrix_python) {
 
 // Iterate over configurations that define the (distibuted) build matrix.
 // Spawn a host of the given nodetype for each combination and run in parallel.
-utils.concurrent(matrix)
+utils.run(matrix)
